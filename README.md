@@ -175,7 +175,7 @@ the subject-facing interface should be implemented, we propose the following:
 
 ## Usage
 
-You can use the [online editor](https://editor.swagger.io/?url=https://raw.githubusercontent.com/F-Secure/gdpr-subject-rights-api/openapi.yaml)
+You can use the [online editor](https://editor.swagger.io/?url=https://raw.githubusercontent.com/F-Secure/gdpr-subject-rights-api/master/openapi.yaml)
 to explore and edit the API specification.
 
 You can also use any of the [available OpenAPI
