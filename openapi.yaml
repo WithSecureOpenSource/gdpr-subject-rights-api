@@ -1,0 +1,451 @@
+openapi: 3.0.1
+info:
+  title: GDPR Subject Rights API
+  version: 0.1.0
+  description: >-
+    This is an OpenAPI specification that intends to be a partial solution for
+    managing the European Global Data Protection Regulation (GDPR) data subject
+    rights in an enterprise setting. It standardizes the way back office
+    services comply to data export and deletion requests.
+  contact:
+    name: Open Github issue
+    url: 'https://github.com/F-Secure/gdpr-api/issues/new'
+  license:
+    name: Apache 2.0
+    url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
+externalDocs:
+  description: Supporting documentation on GitHub
+  url: 'https://github.com/F-Secure/gdpr-api'
+tags:
+  - name: flags
+    description: Togglable flags on personal data use
+  - name: export
+    description: Access to personal data
+  - name: deletion
+    description: Deletion of personal data
+paths:
+  /contexts:
+    get:
+      tags:
+        - flags
+        - export
+        - deletion
+      summary: Get personal data contexts
+      description: >-
+        The API exposes actions against contexts (logical groups) of personal
+        data in the given system. The grouping should be based on usage, e.g.,
+        personal data used for marketing, personal data collected for usage
+        analysis, or personal data processed for technical realisation of the
+        service. The same personal data type (e.g., an email address) may be in
+        several contexts; this does not imply it would be actually duplicated in
+        the system, but it could be used in different contexts. Typically, a
+        single context should not contain data that is processed under different
+        basis of processing.
+      parameters:
+        - name: Accept-Language
+          description: A list of accepted languages.
+          in: header
+          schema:
+            type: string
+          required: false
+          example: fi_FI
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContextsResponse'
+        '400':
+          description: Invalid Request
+        '404':
+          description: No UUID found
+  '/exportrequests/{context_uuid}':
+    post:
+      tags:
+        - export
+      summary: Export personal data
+      description: >-
+        Create an export request to export all personal data stored within a
+        particular personal data context. This will only schedule an export. The
+        status and result must be polled for separately.
+      parameters:
+        - in: path
+          name: context_uuid
+          required: true
+          description: The personal data context (data category) to export.
+          schema:
+            $ref: '#/components/schemas/ContextUUID'
+      requestBody:
+        description: >-
+          Authenticated identifiers for the data subject whose data should be
+          operated on.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExportRequest'
+      responses:
+        '202':
+          description: Export request queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportRequestResponse'
+        '400':
+          description: Invalid
+        '403':
+          description: Insufficient authenticated identifiers
+        '404':
+          description: No UUID for these identifiers found
+  /exportrequeststatus:
+    post:
+      tags:
+        - export
+      summary: Query the status of an export request
+      description: >-
+        Query the status of an export request. The status should be polled for
+        until completed. The location of the exported content is communicated
+        once the export request is completed.
+      parameters:
+        - name: Accept-Language
+          description: A list of accepted languages.
+          in: header
+          schema:
+            type: string
+          required: false
+          example: fi_FI
+      requestBody:
+        description: The unique id for a particular on-going export request.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExportRequestResponse'
+      responses:
+        '102':
+          description: Export request being processed
+        '200':
+          description: Export ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportReadyResponse'
+        '400':
+          description: Invalid
+        '404':
+          description: No data for these identifiers found.
+        '451':
+          description: Partial export ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportPartialReadyResponse'
+  '/deletionrequests/{context_uuid}':
+    post:
+      tags:
+        - deletion
+      summary: Delete personal data
+      description: >-
+        Create a deletion request to delete all personal data stored within a
+        particular personal data context. This will only schedule a deletion.
+        The status and result must be polled for separately.
+      parameters:
+        - in: path
+          name: context_uuid
+          required: true
+          description: The personal data context (data category) to delete.
+          schema:
+            $ref: '#/components/schemas/ContextUUID'
+      requestBody:
+        description: >-
+          Authenticated identifiers for the data subject whose data should be
+          operated on. A deletion request must have a justification from a data
+          subject.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeletionRequest'
+      responses:
+        '202':
+          description: Deletion request queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeletionRequestResponse'
+        '400':
+          description: Invalid
+        '403':
+          description: Insufficient authenticated identifiers
+        '404':
+          description: No UUID for these identifiers found
+  /deletionrequeststatus:
+    post:
+      tags:
+        - deletion
+      summary: Query the status of a deletion request
+      description: >-
+        Query the status of a deletion request. The status should be polled for
+        until completed.
+      parameters:
+        - name: Accept-Language
+          description: A list of accepted languages
+          in: header
+          schema:
+            type: string
+          required: false
+          example: fi_FI
+      requestBody:
+        description: The unique id for a particular on-going deletion request.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeletionRequestResponse'
+      responses:
+        '102':
+          description: Deletion request being processed
+        '200':
+          description: Deletion request processed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeletionReadyResponse'
+        '400':
+          description: Invalid
+        '404':
+          description: Deletion request not found
+        '451':
+          description: Deletion not possible
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeletionDeniedResponse'
+components:
+  schemas:
+    ContextsResponse:
+      type: array
+      description: >-
+        This is a list of personal data contexts, together with required
+        authentication identifiers needed for the export and delete operations.
+      items:
+        type: object
+        properties:
+          context-uuid:
+            $ref: '#/components/schemas/ContextUUID'
+          deletion_required_auths:
+            $ref: '#/components/schemas/RequiredAuth'
+          export_required_auths:
+            $ref: '#/components/schemas/RequiredAuth'
+          context_description:
+            $ref: '#/components/schemas/ContextDescription'
+    RequiredAuth:
+      type: array
+      description: >-
+        This list contains alternative authentication options (lists) of
+        required authentication identifiers needed for an export or delete
+        operation.
+      items:
+        type: array
+        items:
+          anyOf:
+            - $ref: '#/components/schemas/TelephoneNumber'
+            - $ref: '#/components/schemas/EmailAddress'
+            - $ref: '#/components/schemas/GovernmentIdNumber'
+            - $ref: '#/components/schemas/CustomIdentifier'
+        example:
+          - tel
+          - email
+    SuppliedAuth:
+      type: object
+      description: >-
+        A collection of authenticated identifiers uniquely identifying a data
+        subject. The collection must match one of the alternatives dictated by
+        the context for the given operation.
+      properties:
+        tel:
+          type: string
+          description: A telephone number.
+          example: '+3581234567'
+        email:
+          type: string
+          description: An email address.
+          example: email@example.com
+        government_id_number:
+          type: object
+          description: A governmental identification number.
+          required:
+            - id
+            - country_code
+          properties:
+            id:
+              type: string
+              example: 111213-1337
+            country_code:
+              type: string
+              example: fi
+        custom_identifier:
+          type: object
+          description: Any custom identifier.
+          required:
+            - name
+            - value
+          properties:
+            name:
+              type: string
+              example: our-homegrown-id-foobar
+            value:
+              type: string
+              example: homegrown-id-example
+      example:
+        tel: '+3581234567'
+        email: email@example.com
+    ExportRequest:
+      type: object
+      properties:
+        authenticated_identifiers:
+          $ref: '#/components/schemas/SuppliedAuth'
+    ExportReadyResponse:
+      type: object
+      properties:
+        export-uri:
+          type: string
+          description: A unique URL. Should be a short-lived resource.
+          example: 'https://example.com/data-export/<uuid_token>'
+    ExportPartialReadyResponse:
+      type: object
+      properties:
+        export-uri:
+          type: string
+          description: A unique URL. Should be a short-lived resource.
+          example: 'https://example.com/data-export/<uuid_token>'
+        reason:
+          type: string
+          description: Human readable reason for why all data could not be exported
+          example: Legal obligation to not disclose data.
+    DeletionRequest:
+      type: object
+      properties:
+        request_grounds:
+          $ref: '#/components/schemas/DeletionRequestGrounds'
+        authenticated_identifiers:
+          $ref: '#/components/schemas/SuppliedAuth'
+    DeletionRequestGrounds:
+      type: string
+      description: The data subject's reason for her personal data deletion request.
+      enum:
+        - no_longer_necessary
+        - consent_withdrawn
+        - objection_to_processing
+        - processing_unlawful
+        - legal_compliance
+        - underage_data_subject
+        - unspecified
+      example: consent_withdrawn
+    TelephoneNumber:
+      type: string
+      enum:
+        - tel
+    EmailAddress:
+      type: string
+      enum:
+        - email
+    GovernmentIdNumber:
+      type: object
+      enum:
+        - government_id_number
+      description: >-
+        A government-issued ID number, such as a Social Security Number or
+        Personal ID Number. A country code must be supplied to determine the
+        issuing country. If not issued by an entity that can be identified using
+        as country code, use a generic CustomIdentifier instead.
+      required:
+        - country_code
+      properties:
+        country_code:
+          type: string
+    CustomIdentifier:
+      type: object
+      description: >-
+        Any custom, service specific identifier, such as a customer or
+        subscriber reference number.
+      required:
+        - custom_id_name
+      properties:
+        custom_id_name:
+          type: string
+    ContextDescription:
+      type: object
+      properties:
+        human-readable:
+          type: string
+          description: >-
+            The description of data collected in this context. Should describe
+            the purpose of processing. Should use the languages in the request
+            Accept-Language header or a language preference expressed by the
+            data subject earlier.
+          example: For use in direct marketing.
+    ContextUUID:
+      type: string
+      example: '1234'
+      description: A unique context identifier.
+    ExportRequestResponse:
+      type: object
+      properties:
+        export_request_id:
+          $ref: '#/components/schemas/ExportRequestUUID'
+    ExportRequestUUID:
+      type: string
+      description: A unique export request identifier.
+    DeletionRequestResponse:
+      type: object
+      properties:
+        deletion_request_id:
+          $ref: '#/components/schemas/DeletionRequestUUID'
+    DeletionRequestUUID:
+      type: string
+      description: A unique deletion request identifier.
+    DeletionReadyResponse:
+      type: object
+      required:
+        - context_uuid
+        - deletion_feedback
+      properties:
+        context_uuid:
+          $ref: '#/components/schemas/ContextUUID'
+        deletion_feedback:
+          type: string
+          description: State of the performed deletion request.
+          enum:
+            - completed
+    DeletionDeniedReason:
+      type: string
+      description: >-
+        A justification for why a deletion request could not be completely or
+        partially complied to.
+      enum:
+        - freedom_of_expression
+        - legal_obligation
+        - public_health_interest
+        - archival
+        - legal_claims
+        - no_personal_data_to_delete
+        - no_grounds_for_deletion_request
+      example: public_health_interest
+    DeletionDeniedResponse:
+      type: object
+      required:
+        - context_uuid
+        - retention_reason
+        - retention_human_readable_reason
+      properties:
+        context_uuid:
+          $ref: '#/components/schemas/ContextUUID'
+        retention_reason:
+          type: array
+          items:
+            $ref: '#/components/schemas/DeletionDeniedReason'
+        retention_human_readable_reason:
+          type: string
+          description: A human readable reason for why the request was denied.

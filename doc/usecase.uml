@@ -1,0 +1,90 @@
+@startuml
+' http://plantuml.com/
+
+scale 0.75
+hide footbox
+
+skinparam shadowing false
+skinparam roundcorner 6
+skinparam maxmessagesize 380
+skinparam sequence {
+	LifeLineBorderColor #7EC0EE
+	LifeLineBackgroundColor #7EC0EE
+
+}
+skinparam {
+    SequenceTitleFontSize 20
+
+    SequenceGroupBackgroundColor #eaebe6
+    SequenceGroupBodyBackgroundColor #FFFFFF
+    SequenceGroupBorderColor #7EC0EE
+    SequenceGroupBorderThickness 1
+    SequenceGroupHeaderFontStyle italic
+
+	ArrowColor #7EC0EE
+
+	ParticipantBorderColor #7EC0EE
+	ParticipantBackgroundColor #eaebe6
+
+	CollectionsBorderColor #7EC0EE
+	CollectionsBackgroundColor #eaebe6
+
+	ActorBorderColor #7EC0EE
+	ActorBackgroundColor #eaebe6
+
+    NoteBorderColor #cfd2c6
+    NoteBackgroundColor #FFFFFF
+    NoteColor #FFFFFF
+
+    BoundaryBorderColor #eaebe6
+    BoundaryBackgroundColor #eaebe6
+
+    ControlBorderColor #eaebe6
+    ControlBackgroundColor #eaebe6
+
+    DatabaseBorderColor #eaebe6
+    DatabaseBackgroundColor #eaebe6
+
+    EntityBorderColor #eaebe6
+    EntityBackgroundColor #eaebe6
+}
+
+title EU citizen asking a company for her personal data
+
+actor "Data subject" as DS
+participant "Customer service" as CS
+collections "Internal services\n storing personal\ndata <1..n>" as S
+
+Note left of CS
+    Any customer facing interface:
+    email, phone, portal, info desk, ...
+    **Not specified by this API.**
+End note
+
+Note left of S
+    **GDPR Subject Rights API**. Implemented once for
+    each internal service which stores personal data.
+End note
+
+|||
+DS -> CS: Hey yo! Delete my personal data! Also gimme a copy of what you had on me.
+|||
+Note right of CS
+    For each service
+End note
+CS -> S: What personal data contexts do you store and how should I identify the data subject?
+|||
+S -> CS: I store personal data //for direct marketing//. You must give me an //email// and //phone number// which you have verified. Then I can give you the personal data or delete it. (These are example //values// only.)
+CS -> DS: Sure thing, I just need to verify that you are you, by your //email// and //phone number//.
+DS -> CS: I am who I say I am! (How the verification is done is not specified by this API).
+CS -> DS: Thanks. We'll get back to you when we're done with your request.
+|||
+CS -> S: I have this //email// and this //phone number// that I have verified. Please give me the personal data you have //for direct marketing// and then delete it.
+S -> CS: Ok. I'll get on  it. You can keep polling me for the status of this //export request// and //deletion request//.
+CS -> S: Are you done yet with the //export request// and //deletion request//?
+S -> CS: Yes! You can retrieve the exported data at //example.com/?token=...//
+|||
+CS -> DS: Hey! We are done with your request. Your requested personal data is attached.
+
+@enduml
+

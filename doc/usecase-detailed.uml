@@ -1,0 +1,95 @@
+@startuml
+' http://plantuml.com/
+
+' Note: This might be out-of-date. As OpenAPI seems to lack a way to codify a
+'       sequence diagram, we're forced to document it separately. And as with all
+'       separate documentation they become out-of-sync fast.
+
+scale 0.75
+hide footbox
+
+skinparam shadowing false
+skinparam roundcorner 6
+skinparam sequence {
+	LifeLineBorderColor #7EC0EE
+	LifeLineBackgroundColor #7EC0EE
+
+}
+skinparam {
+    SequenceTitleFontSize 20
+
+    SequenceGroupBackgroundColor #eaebe6
+    SequenceGroupBodyBackgroundColor #FFFFFF
+    SequenceGroupBorderColor #7EC0EE
+    SequenceGroupBorderThickness 1
+    SequenceGroupHeaderFontStyle italic
+
+	ArrowColor #7EC0EE
+
+	ParticipantBorderColor #7EC0EE
+	ParticipantBackgroundColor #eaebe6
+
+	CollectionsBorderColor #7EC0EE
+	CollectionsBackgroundColor #eaebe6
+
+	ActorBorderColor #7EC0EE
+	ActorBackgroundColor #eaebe6
+
+    NoteBorderColor #cfd2c6
+    NoteBackgroundColor #FFFFFF
+    NoteColor #FFFFFF
+
+    BoundaryBorderColor #eaebe6
+    BoundaryBackgroundColor #eaebe6
+
+    ControlBorderColor #eaebe6
+    ControlBackgroundColor #eaebe6
+
+    DatabaseBorderColor #eaebe6
+    DatabaseBackgroundColor #eaebe6
+
+    EntityBorderColor #eaebe6
+    EntityBackgroundColor #eaebe6
+}
+
+title Customer service using the //GDPR subject rights API//
+
+participant "Customer service" as CS
+collections "Internal services\n storing personal\ndata <1..n>" as S
+
+Note over CS
+    Data subject contacts customer service.
+End note
+
+group Retrieve personal data contexts
+  CS -> S: GET /contexts
+  S -> CS: 200: [{context, description, required_auths}]
+end
+|||
+Note over CS
+    Customer service acquires verified required_auth
+    values.
+End note
+group Access to personal data
+  CS -> S: POST /exportrequests/{context} {auths: <required_auths>}
+  S -> CS: 200: Queued {export_request_id}
+  |||
+  CS -> S: POST /exportrequeststatus {export_request_id}
+  S -> CS: 200: Done {export-url}
+end
+|||
+group Deletion of personal data
+  CS -> S: POST /deletionrequests/{context} {auths: <required_auths>, reason}
+  S -> CS: 200: Queued {deletion_request_id}
+  |||
+  CS -> S: POST /deletionrequeststatus {deletion_request_id}
+  S -> CS: 200: Done
+end
+|||
+Note over CS
+    Customer service assembles the exported personal
+    data and hands it to the data subject.
+End note
+
+@enduml
+
