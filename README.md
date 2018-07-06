@@ -3,7 +3,7 @@
 ## Summary
 
 This is an [OpenAPI v3](https://www.openapis.org/) specification that intends
-to be a partial solution for managing the [European Global Data Protection
+to be a partial solution for managing the [European Union's General Data Protection
 Regulation (GDPR)](http://eur-lex.europa.eu/eli/reg/2016/679/oj) data subject
 rights in an enterprise setting. It standardizes the way back office services
 comply to data export and deletion requests.
